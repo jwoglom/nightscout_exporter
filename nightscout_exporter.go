@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
 )
 
 const (
