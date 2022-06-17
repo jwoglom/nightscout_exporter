@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"log"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -115,7 +116,7 @@ func main() {
 
 	exporter := NewNightscoutCheckerExporter()
 	prometheus.MustRegister(exporter)
-	http.Handle(*metricsPath, prometheus.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
                 <head><title>Nightscout exporter</title></head>
