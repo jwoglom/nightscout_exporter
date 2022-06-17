@@ -79,7 +79,7 @@ jobs:
         mkdir -p .build/linux-arm64
         cp nightscout_exporter .build/linux-arm64/nightscout_exporter
     - name: Build the Docker image
-      run: DOCKER_ARCHS=arm64 docker build . --file Dockerfile --tag jwoglom/nightscout_exporter:latest
+      run: DOCKER_ARCHS=arm64 docker build . --file Dockerfile --tag jwoglom/nightscout_exporter:latest --build-arg ARCH=arm64
       
     - name: Docker Push
       run: docker push jwoglom/nightscout_exporter
