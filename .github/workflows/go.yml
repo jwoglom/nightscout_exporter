@@ -1,0 +1,85 @@
+name: Go
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: Build
+      run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o nightscout_exporter -v ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Upload amd64 binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: nightscout_exporter-amd64
+        path: nightscout_exporter
+
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+    - name: Copy built binary
+      run: |
+        mkdir -p .build/linux-amd64
+        cp nightscout_exporter .build/linux-amd64/nightscout_exporter
+    - name: Build the Docker image
+      run: DOCKER_ARCHS=amd64 docker build . --file Dockerfile --tag jwoglom/nightscout_exporter:latest
+      
+    - name: Docker Push
+      run: docker push jwoglom/nightscout_exporter
+      
+  build_arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: Build
+      run: GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o nightscout_exporter -v ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Upload arm64 binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: nightscout_exporter-arm64
+        path: nightscout_exporter
+
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+    - name: Copy built binary
+      run: |
+        mkdir -p .build/linux-arm64
+        cp nightscout_exporter .build/linux-arm64/nightscout_exporter
+    - name: Build the Docker image
+      run: DOCKER_ARCHS=arm64 docker build . --file Dockerfile --tag jwoglom/nightscout_exporter:latest
+      
+    - name: Docker Push
+      run: docker push jwoglom/nightscout_exporter
