@@ -8,19 +8,15 @@ import (
 	"strconv"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-)
-
-const (
-	namespace = "nightscout" // For Prometheus metrics.
+	log "github.com/sirupsen/logrus"
 )
 
 var (
 	listenAddress = flag.String("telemetry.address", ":9552", "Address on which to expose metrics.")
 	metricsPath   = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
-	nightscoutUrl = flag.String("nightscout_endpoint", "https://foo.azurewebsites.net/pebble?count=2&units=mmol", "Nightscout url to jsondata, only mmol is supported")
+	nightscoutUrl = flag.String("nightscout_endpoint", "https://foo.azurewebsites.net/pebble?count=2&units=mgdl", "Nightscout url to jsondata, only mmol is supported")
 )
 
 // Exporter collects nightscout stats from machine of a specified user and exports them using
@@ -49,6 +45,7 @@ func getJson(url string) NightscoutPebble {
 	r, err := http.Get(url)
 	if err != nil {
 		fmt.Println("got error1", err.Error())
+		return NightscoutPebble{}
 	}
 	defer r.Body.Close()
 
@@ -56,6 +53,7 @@ func getJson(url string) NightscoutPebble {
 	err2 := json.NewDecoder(r.Body).Decode(&bar)
 	if err2 != nil {
 		fmt.Println("error:", err2.Error())
+		return NightscoutPebble{}
 	}
 
 	return bar
@@ -89,9 +87,10 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	data := getJson(*nightscoutUrl)
 
 	fmt.Println("trying to convert to float:", data.Bgs[0].Sgv)
-	glucose, _ := strconv.ParseFloat(data.Bgs[0].Sgv, 64)
-
-	e.statusNightscout.With(prometheus.Labels{"glucosetype": "mmol", "url": *nightscoutUrl}).Set(float64(glucose))
+	glucose, err := strconv.ParseFloat(data.Bgs[0].Sgv, 64)
+	if err != nil {
+		e.statusNightscout.With(prometheus.Labels{"glucosetype": "mgdl", "url": *nightscoutUrl}).Set(float64(glucose))
+	}
 
 	return nil
 }
